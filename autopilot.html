@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Luminary - Super Smash Bros Arena</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Inter:wght@400;600;800&display=swap');
+
+body, html {
+margin: 0;
+padding: 0;
+width: 100%;
+height: 100%;
+overflow: hidden;
+background-color: #060913;
+font-family: 'Inter', sans-serif;
+user-select: none;
+}
+
+.smash-font {
+font-family: 'Teko', sans-serif;
+}
+
+.glass-panel {
+background: rgba(13, 20, 36, 0.85);
+backdrop-filter: blur(12px);
+border: 1px solid rgba(255, 255, 255, 0.12);
+box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+.pulse-glow-red {
+text-shadow: 0 0 16px rgba(244, 63, 94, 0.9), 0 0 32px rgba(244, 63, 94, 0.5);
+}
+
+canvas {
+display: block;
+touch-action: none;
+}
+</style>
+</head>
+<body class="relative w-full h-full flex flex-col justify-between overflow-hidden">
+
+<canvas id="gameCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+<!-- START SCREEN -->
+<div id="startScreen" class="absolute inset-0 z-50 bg-[#060913] flex flex-col items-center justify-center p-4">
+<div class="glass-panel max-w-xl w-full rounded-3xl p-8 border border-slate-700 text-center shadow-2xl">
+<h1 class="smash-font text-6xl md:text-8xl font-black tracking-wider text-cyan-400 mb-2 uppercase drop-shadow-lg">THE LUMINARY</h1>
+<p class="text-slate-400 text-sm tracking-widest uppercase mb-8 font-semibold">Super Smash Bros Arena Experience</p>
+
+<div class="flex flex-col gap-3">
+<button id="easyModeBtn" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold px-8 py-3.5 rounded-2xl transition shadow-xl shadow-emerald-500/40 text-lg uppercase tracking-wider">
+Easy Mode (Slow & Defensive Bot)
+</button>
+<button id="hardModeBtn" class="bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-extrabold px-8 py-3.5 rounded-2xl transition shadow-xl shadow-rose-500/40 text-lg uppercase tracking-wider">
+Hard Mode (Aggressive Bot)
+</button>
+<button id="trainingModeBtn" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/40 font-extrabold px-8 py-3.5 rounded-2xl transition shadow-xl text-lg uppercase tracking-wider">
+Training Mode (Dummy)
+</button>
+<button id="downloadSourceStartBtn" class="bg-cyan-950/80 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-500/50 font-bold px-8 py-3 rounded-2xl transition text-sm uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
+<span>💾 Save Offline Game (.html)</span>
+</button>
+</div>
+</div>
+</div>
+
+<!-- COUNTDOWN SCREEN -->
+<div id="countdownScreen" class="hidden absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+<span id="countdownText" class="smash-font text-9xl font-black text-cyan-400 pulse-glow-red tracking-wider">3</span>
+</div>
+
+<!-- TOP HUD: PLAYER 1 & AI BOT STATUS -->
+<div id="gameHud" class="hidden relative z-10 w-full p-4 flex justify-between items-start pointer-events-none">
+
+<!-- PLAYER 1 HUD (TOP-LEFT) -->
+<div class="glass-panel rounded-2xl p-4 w-72 pointer-events-auto border-l-4 border-l-cyan-400 transition-all duration-300">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-black tracking-widest text-cyan-400 uppercase">P1 • THE LUMINARY</span>
+<span id="p1DashBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/50">DASH READY</span>
+</div>
+
+<!-- Damage Percentage -->
+<div class="flex items-baseline justify-between my-1">
+<div class="flex items-baseline">
+<span id="p1Damage" class="smash-font text-5xl font-bold tracking-tight text-white leading-none">0</span>
+<span class="smash-font text-2xl font-bold text-slate-400 ml-0.5">%</span>
+</div>
+<!-- Stock Pips -->
+<div id="p1Stocks" class="flex gap-1.5 items-center"></div>
+</div>
+
+<!-- Jump Dots Indicator -->
+<div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/50 text-xs text-slate-400">
+<span>Mid-Air Jumps (4 Max)</span>
+<div id="p1JumpDots" class="flex gap-1"></div>
+</div>
+<span id="p1BotBadge" class="hidden mt-2 block text-[10px] font-black tracking-widest text-center py-1 rounded-lg bg-violet-950 text-violet-300 border border-violet-500/60">🤖 AUTOPILOT ENGAGED</span>
+</div>
+
+<!-- STAGE TITLE / CENTER GAME INFO -->
+<div class="flex flex-col items-center pointer-events-auto">
+<div class="glass-panel px-5 py-1.5 rounded-full text-center border border-slate-700/60 mb-2">
+<span id="modeDisplayLabel" class="text-xs font-extrabold tracking-widest text-slate-300 uppercase">MODE: HARD</span>
+</div>
+<button id="toggleControlsBtn" class="text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 px-3 py-1 rounded-md transition backdrop-blur">
+Press 'H' for Controls
+</button>
+</div>
+
+<!-- AI BOT HUD (TOP-RIGHT) -->
+<div class="glass-panel rounded-2xl p-4 w-72 pointer-events-auto border-r-4 border-r-rose-500 transition-all duration-300 text-right">
+<div class="flex justify-between items-center mb-1">
+<span id="aiDiffLabel" class="text-[11px] font-bold text-slate-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">Hard Bot</span>
+<span class="text-xs font-black tracking-widest text-rose-400 uppercase">P2 • AI BOT</span>
+</div>
+
+<!-- Damage Percentage -->
+<div class="flex items-baseline justify-between my-1 flex-row-reverse">
+<div class="flex items-baseline">
+<span id="p2Damage" class="smash-font text-5xl font-bold tracking-tight text-white leading-none">0</span>
+<span class="smash-font text-2xl font-bold text-slate-400 ml-0.5">%</span>
+</div>
+<!-- Stock Pips -->
+<div id="p2Stocks" class="flex gap-1.5 items-center"></div>
+</div>
+
+<div id="aiDescText" class="text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-700/50">
+Aggressive Ledge Guard & Counter-Rolls Active
+</div>
+</div>
+</div>
+
+<!-- BOTTOM LEFT MENU BUTTON & PANEL -->
+<div id="inGameMenuContainer" class="hidden absolute bottom-6 left-6 z-30 pointer-events-auto">
+<button id="menuToggleBtn" class="glass-panel bg-slate-900/90 hover:bg-slate-800 text-cyan-400 font-extrabold px-5 py-3 rounded-2xl border border-cyan-500/40 shadow-xl uppercase tracking-wider text-sm flex items-center gap-2">
+<span>⚙ Menu</span>
+</button>
+
+<!-- Dropdown Menu Box -->
+<div id="menuDropdown" class="hidden absolute bottom-14 left-0 w-60 glass-panel rounded-2xl p-3 border border-slate-700 shadow-2xl flex flex-col gap-2">
+<button id="menuResumeBtn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition text-left uppercase tracking-wide text-xs">
+▶ Resume Match
+</button>
+<button id="menuRestartBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2.5 rounded-xl transition text-left uppercase tracking-wide text-xs">
+🔄 Restart Match
+</button>
+<button id="downloadSourceMenuBtn" class="bg-cyan-950/80 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-500/40 font-bold px-4 py-2.5 rounded-xl transition text-left uppercase tracking-wide text-xs">
+💾 Download Game File
+</button>
+<button id="menuQuitBtn" class="bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-500/30 font-bold px-4 py-2.5 rounded-xl transition text-left uppercase tracking-wide text-xs">
+🚪 Quit to Main Menu
+</button>
+</div>
+</div>
+
+<!-- TRAINING MODE CONTROL PANEL (FLOATING) -->
+<div id="trainingControlPanel" class="hidden absolute top-24 left-6 z-30 w-72 glass-panel rounded-2xl p-4 border border-cyan-500/40 shadow-2xl">
+<div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+<span class="text-xs font-black tracking-widest text-cyan-400 uppercase">Training Settings</span>
+<button id="closeTrainingPanelBtn" class="text-slate-400 hover:text-white text-xs font-bold bg-slate-800 px-2 py-0.5 rounded">Hide Panel</button>
+</div>
+<div class="flex flex-col gap-2 text-xs text-slate-300">
+<div class="flex justify-between items-center bg-slate-900/80 p-2 rounded-lg">
+<span>Bot Behavior</span>
+<span class="font-bold text-cyan-400">Idle / Dummy</span>
+</div>
+<p class="text-[11px] text-slate-400 leading-relaxed">
+• Bot does not attack or move.<br>
+• Bot takes standard knockback.<br>
+• Infinite stocks enabled.
+</p>
+</div>
+</div>
+<button id="openTrainingPanelBtn" class="hidden absolute top-24 left-6 z-30 glass-panel px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-400 border border-cyan-500/40 hover:bg-slate-800 transition">
+Show Training Panel
+</button>
+
+<!-- CENTER-BOTTOM: AIM MATRIX HUD VISUALIZER -->
+<div id="aimMatrixHud" class="hidden relative z-10 w-full pb-4 flex justify-center items-end pointer-events-none">
+<div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-4 border border-slate-700/60 pointer-events-auto">
+<div class="relative w-12 h-12 rounded-full border border-slate-600/80 bg-slate-900/90 flex items-center justify-center">
+<div class="absolute w-4 h-4 rounded-full border border-dashed border-slate-500/50"></div>
+<span id="aimMatrixArrow" class="text-2xl font-black text-cyan-400 transition-all duration-100">⏺</span>
+</div>
+
+<div class="flex flex-col">
+<span class="text-[10px] font-black tracking-widest text-slate-400 uppercase">AIM MATRIX STATUS</span>
+<span id="aimMatrixLabel" class="text-sm font-bold text-slate-200">NEUTRAL (45px Deadzone)</span>
+<span id="aimVectorText" class="text-[10px] font-mono text-slate-400">dx: 0 | dy: 0</span>
+</div>
+</div>
+</div>
+
+<!-- CONTROLS CHEAT SHEET MODAL OVERLAY -->
+<div id="controlsModal" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+<div class="glass-panel max-w-2xl w-full rounded-2xl p-6 border border-slate-700 text-slate-200 relative">
+<button id="closeControlsBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">✕</button>
+
+<h2 class="smash-font text-3xl font-bold text-cyan-400 tracking-wide mb-4">THE LUMINARY - CONTROLS & MECHANICS</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+<div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-cyan-300 text-sm mb-2 border-b border-slate-700 pb-1">MOVEMENT & LEDGES</h3>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">A / D</span> Move Left / Right</p>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">Spacebar</span> Jump / Unhang off ledge</p>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">3x Ledge Magnet</span> Huge grab area with 1.5s invincibility</p>
+</div>
+
+<div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-cyan-300 text-sm mb-2 border-b border-slate-700 pb-1">Q-GRAB & SHIELD</h3>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">Q Key</span> Dash & Grab (1 per airtime)</p>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">E Key</span> Shield</p>
+</div>
+
+<div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-cyan-300 text-sm mb-2 border-b border-slate-700 pb-1">ATTACKS & MOUSE DASH</h3>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">Right Click</span> Mouse Dash Attack</p>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">Left Click</span> Upward Mouse Dash</p>
+<p class="mb-1"><span class="font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">F / J Keys</span> Directional Aim Matrix Attack</p>
+</div>
+
+<div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+<h3 class="font-bold text-cyan-300 text-sm mb-2 border-b border-slate-700 pb-1">DIFFICULTY SYSTEM</h3>
+<p class="text-slate-300 leading-relaxed">
+• <b>Easy:</b> Bot moves slower, attacks less, uses shield often.
+<br>• <b>Hard:</b> Fast movement, aggressive ledge guarding & combos.
+<br>• <b>Training:</b> Dummy practice mode.
+<br>• <b>Rule:</b> Reaching 250% damage instantly causes a K.O.
+</p>
+</div>
+</div>
+
+<div class="mt-6 text-center">
+<button id="startPlayBtn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold px-8 py-2.5 rounded-xl transition shadow-lg shadow-cyan-500/30 uppercase tracking-wider text-sm">
+Resume Match
+</button>
+</div>
+</div>
+</div>
+
+<!-- DRAMATIC END SCREEN (WIN / LOSE) -->
+<div id="gameOverModal" class="hidden absolute inset-0 z-50 bg-black/90 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+<h1 id="winnerText" class="smash-font text-6xl md:text-8xl font-black tracking-wider pulse-glow-red text-white mb-2">PLAYER 1 WINS!</h1>
+<p class="text-slate-300 text-lg mb-8">GAME SET!</p>
+<div class="flex gap-4">
+<button id="rematchBtn" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold px-8 py-3 rounded-2xl transition shadow-xl shadow-cyan-500/40 text-lg uppercase tracking-widest">
+Rematch
+</button>
+<button id="exitBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold px-8 py-3 rounded-2xl transition shadow-xl text-lg uppercase tracking-widest border border-slate-700">
+Exit
+</button>
+</div>
+</div>
+
+<script>
+class SoundEngine {
+constructor() {
+this.ctx = null;
+}
+
+init() {
+if (!this.ctx) {
+this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+}
+}
+
+playJump() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'sine';
+osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(480, this.ctx.currentTime + 0.12);
+gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.12);
+}
+
+playDash() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'sawtooth';
+osc.frequency.setValueAtTime(250, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.16);
+gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.16);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.16);
+}
+
+playHit(heavy = false) {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = heavy ? 'sawtooth' : 'square';
+const startFreq = heavy ? 160 : 280;
+const endFreq = heavy ? 30 : 80;
+const duration = heavy ? 0.35 : 0.15;
+
+osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
+gain.gain.setValueAtTime(heavy ? 0.35 : 0.2, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + duration);
+}
+
+playGrab() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'triangle';
+osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.3);
+gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.3);
+}
+
+playThrow() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'sawtooth';
+osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(980, this.ctx.currentTime + 0.22);
+gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.22);
+}
+
+playShield() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'sine';
+osc.frequency.setValueAtTime(540, this.ctx.currentTime);
+gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.08);
+}
+
+playKO() {
+if (!this.ctx) return;
+const osc = this.ctx.createOscillator();
+const gain = this.ctx.createGain();
+osc.type = 'sawtooth';
+osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.7);
+gain.gain.setValueAtTime(0.45, this.ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.7);
+osc.connect(gain);
+gain.connect(this.ctx.destination);
+osc.start();
+osc.stop(this.ctx.currentTime + 0.7);
+}
+}
+
+const audio = new SoundEngine();
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameMode = 'hard';
+let gameState = 'start';
+
+const WORLD = {
+width: 3800,
+height: 2100,
+gravity: 0.5,
+terminalVelocity: 16,
+friction: 0.86,
+airFriction: 0.985
+};
+
+const STAGE = {
+x: 1140,
+y: 1250,
+width: 1520,
+height: 90,
+color: '#1e293b',
+topColor: '#38bdf8'
+};
+
+const BLAST_ZONES = {
+left: -380,
+right: 4180,
+top: -160,
+bottom: 2300
+};
+
+let screenShake = 0;
+const koBeams = [];
+const shockwaves = [];
+
+let dramaticZoom = {
+active: false,
+targetX: 0,
+targetY: 0,
+currentZoom: 1,
+targetZoom: 3.5,
+progress: 0
+};
+
+// --- SECRET AUTOPILOT ---
+let p1BotActive = false;
+let p1BotTimer = 0;
+
+const keys = {};
+const mouse = {
+x: window.innerWidth / 2,
+y: window.innerHeight / 2,
+worldX: WORLD.width / 2,
+worldY: WORLD.height / 2,
+dx: 0,
+dy: 0,
+dist: 0,
+direction: 'NEUTRAL'
+};
+
+function downloadCurrentHTML() {
+const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const blob = new Blob([htmlContent], { type: 'text/html' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'the_luminary_smash_arena.html';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+}
+
+function updateAimMatrix() {
+const centerX = window.innerWidth / 2;
+const centerY = window.innerHeight / 2;
+
+mouse.dx = mouse.x - centerX;
+mouse.dy = mouse.y - centerY;
+mouse.dist = Math.sqrt(mouse.dx * mouse.dx + mouse.dy * mouse.dy);
+
+const DEADZONE = 45;
+
+if (mouse.dist <= DEADZONE) {
+mouse.direction = 'NEUTRAL';
+} else {
+const absDx = Math.abs(mouse.dx);
+const absDy = Math.abs(mouse.dy);
+
+if (absDx > absDy) {
+mouse.direction = mouse.dx < 0 ? 'SIDE_LEFT' : 'SIDE_RIGHT';
+} else {
+mouse.direction = mouse.dy < 0 ? 'UP' : 'DOWN';
+}
+}
+
+const arrowElem = document.getElementById('aimMatrixArrow');
+const labelElem = document.getElementById('aimMatrixLabel');
+const vectorElem = document.getElementById('aimVectorText');
+
+vectorElem.textContent = `dx: ${Math.round(mouse.dx)} | dy: ${Math.round(mouse.dy)}`;
+
+switch (mouse.direction) {
+case 'UP':
+arrowElem.textContent = '⬆';
+labelElem.textContent = 'UP ATTACK / DIRECTION';
+break;
+case 'DOWN':
+arrowElem.textContent = '⬇';
+labelElem.textContent = 'DOWN ATTACK / SPIKE';
+break;
+case 'SIDE_LEFT':
+arrowElem.textContent = '⬅';
+labelElem.textContent = 'SIDE ATTACK (LEFT)';
+break;
+case 'SIDE_RIGHT':
+arrowElem.textContent = '➡';
+labelElem.textContent = 'SIDE ATTACK (RIGHT)';
+break;
+default:
+arrowElem.textContent = '⏺';
+labelElem.textContent = 'NEUTRAL (45px Deadzone)';
+break;
+}
+}
+
+class Fighter {
+constructor(x, y, color, name, isAI = false) {
+this.startX = x;
+this.startY = y;
+this.x = x;
+this.y = y;
+this.vx = 0;
+this.vy = 0;
+this.width = 44;
+this.height = 68;
+this.color = color;
+this.name = name;
+this.isAI = isAI;
+
+this.damage = 0;
+this.stocks = 3;
+
+this.maxJumps = 4;
+this.jumpsLeft = 4;
+this.grounded = false;
+
+this.isHanging = false;
+this.hangSide = 0;
+
+this.canMouseDash = true;
+this.canRightClickDash = true;
+this.canGrab = true;
+
+this.isDashing = false;
+this.dashTimer = 0;
+this.dashHitConnected = false;
+
+this.isShielding = false;
+this.shieldHealth = 100;
+this.maxShieldHealth = 100;
+this.dizzyTimer = 0;
+this.clashStunTimer = 0;
+
+this.isRolling = false;
+this.rollTimer = 0;
+this.rollVx = 0;
+
+this.isGrabDashing = false;
+this.grabDashTimer = 0;
+this.grabHolding = null;
+this.grabbedBy = null;
+this.grabTimer = 0;
+
+this.hitstun = 0;
+this.invincibleTimer = 0;
+this.facing = 1;
+
+this.attackTimer = 0;
+this.activeHitbox = null;
+this.ghosts = [];
+this.incomingHitCount = 0;
+}
+
+reset(fullReset = false) {
+this.x = this.startX;
+this.y = STAGE.y - 300;
+this.vx = 0;
+this.vy = 0;
+this.damage = 0;
+this.jumpsLeft = this.maxJumps;
+this.isHanging = false;
+this.canMouseDash = true;
+this.canRightClickDash = true;
+this.canGrab = true;
+this.isDashing = false;
+this.isGrabDashing = false;
+this.isRolling = false;
+this.rollTimer = 0;
+this.grabHolding = null;
+this.grabbedBy = null;
+this.grabTimer = 0;
+this.isShielding = false;
+this.shieldHealth = this.maxShieldHealth;
+this.dizzyTimer = 0;
+this.clashStunTimer = 0;
+this.hitstun = 0;
+this.invincibleTimer = 120;
+this.attackTimer = 0;
+this.activeHitbox = null;
+this.incomingHitCount = 0;
+
+if (fullReset) {
+this.stocks = 3;
+}
+}
+
+update() {
+if (this.damage >= 250) {
+this.takeKO();
+return;
+}
+
+if (this.invincibleTimer > 0) this.invincibleTimer--;
+
+if (this.clashStunTimer > 0) {
+this.clashStunTimer--;
+this.vx = 0;
+this.vy = Math.min(this.vy + WORLD.gravity, WORLD.terminalVelocity);
+this.x += this.vx;
+this.y += this.vy;
+this.checkStageCollision();
+return;
+}
+
+if (this.dizzyTimer > 0) {
+this.dizzyTimer--;
+this.vx *= 0.8;
+this.vy = Math.min(this.vy + WORLD.gravity, WORLD.terminalVelocity);
+this.x += this.vx;
+this.y += this.vy;
+this.checkStageCollision();
+return;
+}
+
+if (this.isHanging) {
+this.vx = 0;
+this.vy = 0;
+const ledgeX = this.hangSide === -1 ? STAGE.x : STAGE.x + STAGE.width;
+this.x = ledgeX + (this.hangSide * 12);
+this.y = STAGE.y + 12;
+return;
+}
+
+if (this.isRolling) {
+this.rollTimer--;
+this.invincibleTimer = Math.max(this.invincibleTimer, 2);
+this.vx = this.rollVx;
+this.vy = 0;
+this.x += this.vx;
+this.y = STAGE.y - this.height / 2;
+this.ghosts.push({ x: this.x, y: this.y, alpha: 0.5, color: '#38bdf8' });
+
+if (this.rollTimer <= 0) {
+this.isRolling = false;
+this.vx = 0;
+}
+return;
+}
+
+if (this.grabbedBy) {
+this.vx = 0;
+this.vy = 0;
+this.x = this.grabbedBy.x + (this.grabbedBy.facing * 35);
+this.y = this.grabbedBy.y;
+return;
+}
+
+if (this.grabHolding) {
+this.grabTimer--;
+this.vx = 0;
+this.vy = 0;
+
+if (this.grabTimer <= 0) {
+const target = this.grabHolding;
+this.grabHolding = null;
+target.grabbedBy = null;
+
+let dx = 0;
+let dy = 0;
+
+if (this.isAI) {
+const stageCenterX = STAGE.x + STAGE.width / 2;
+dx = this.x < stageCenterX ? -1 : 1;
+dy = -0.4;
+} else {
+dx = mouse.worldX - this.x;
+dy = mouse.worldY - this.y;
+}
+
+const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+const throwSpeed = 17.5;
+target.vx = (dx / dist) * throwSpeed;
+target.vy = (dy / dist) * throwSpeed;
+target.hitstun = 60;
+target.grounded = false;
+
+audio.playThrow();
+screenShake = 14;
+createParticles(target.x, target.y, '#ef4444', 25);
+}
+return;
+}
+
+if (this.isGrabDashing) {
+this.grabDashTimer--;
+this.ghosts.push({ x: this.x, y: this.y, alpha: 0.6, color: '#ef4444' });
+if (this.grabDashTimer <= 0) {
+this.isGrabDashing = false;
+}
+}
+
+if (this.hitstun > 0) {
+this.hitstun--;
+this.vx *= 0.98;
+this.vy = Math.min(this.vy + WORLD.gravity * 0.75, WORLD.terminalVelocity);
+this.x += this.vx;
+this.y += this.vy;
+this.checkStageCollision();
+return;
+}
+
+if (this.isDashing) {
+this.dashTimer--;
+this.ghosts.push({ x: this.x, y: this.y, alpha: 0.7, color: '#22d3ee' });
+if (this.dashTimer <= 0) {
+this.isDashing = false;
+}
+}
+
+for (let i = this.ghosts.length - 1; i >= 0; i--) {
+this.ghosts[i].alpha -= 0.05;
+if (this.ghosts[i].alpha <= 0) this.ghosts.splice(i, 1);
+}
+
+if (this.isShielding) {
+this.shieldHealth -= 0.25;
+this.vx = 0;
+if (this.shieldHealth <= 0) {
+this.isShielding = false;
+this.dizzyTimer = 180;
+audio.playHit(true);
+}
+} else if (this.shieldHealth < this.maxShieldHealth) {
+this.shieldHealth += 0.3;
+}
+
+if (!this.grounded) {
+this.vy = Math.min(this.vy + WORLD.gravity, WORLD.terminalVelocity);
+this.vx *= WORLD.airFriction;
+} else {
+this.vx *= WORLD.friction;
+}
+
+this.x += this.vx;
+this.y += this.vy;
+
+this.checkStageCollision();
+this.checkLedgeMagnet();
+
+if (this.attackTimer > 0) {
+this.attackTimer--;
+if (this.attackTimer === 0) {
+this.activeHitbox = null;
+}
+}
+
+if (this.x < BLAST_ZONES.left || this.x > BLAST_ZONES.right ||
+this.y < BLAST_ZONES.top || this.y > BLAST_ZONES.bottom) {
+this.takeKO();
+}
+}
+
+checkLedgeMagnet() {
+if (this.grounded || this.isHanging || this.hitstun > 0) return;
+
+const leftLedgeX = STAGE.x;
+const rightLedgeX = STAGE.x + STAGE.width;
+const ledgeY = STAGE.y;
+
+const magnetRangeX = 225;
+const magnetRangeY = 165;
+
+if (this.x >= leftLedgeX - magnetRangeX && this.x <= leftLedgeX + 50 &&
+this.y >= ledgeY - 40 && this.y <= ledgeY + magnetRangeY && this.vy >= -3) {
+this.hangLedge(-1);
+}
+else if (this.x >= rightLedgeX - 50 && this.x <= rightLedgeX + magnetRangeX &&
+this.y >= ledgeY - 40 && this.y <= ledgeY + magnetRangeY && this.vy >= -3) {
+this.hangLedge(1);
+}
+}
+
+hangLedge(side) {
+this.isHanging = true;
+this.hangSide = side;
+this.vx = 0;
+this.vy = 0;
+this.grounded = false;
+
+this.jumpsLeft = this.maxJumps;
+this.canMouseDash = true;
+this.canRightClickDash = true;
+this.canGrab = true;
+
+this.invincibleTimer = 90;
+audio.playShield();
+createParticles(this.hangSide === -1 ? STAGE.x : STAGE.x + STAGE.width, STAGE.y, '#38bdf8', 10);
+}
+
+checkStageCollision() {
+const platLeft = STAGE.x;
+const platRight = STAGE.x + STAGE.width;
+const platTop = STAGE.y;
+const platBottom = STAGE.y + STAGE.height;
+
+const fLeft = this.x - this.width / 2;
+const fRight = this.x + this.width / 2;
+const fTop = this.y - this.height / 2;
+const fBottom = this.y + this.height / 2;
+
+if (fRight > platLeft && fLeft < platRight && fBottom > platTop && fTop < platBottom) {
+const overlapLeft = fRight - platLeft;
+const overlapRight = platRight - fLeft;
+const overlapTop = fBottom - platTop;
+const overlapBottom = platBottom - fTop;
+
+const minOverlapX = Math.min(overlapLeft, overlapRight);
+const minOverlapY = Math.min(overlapTop, overlapBottom);
+
+if (minOverlapY < minOverlapX) {
+if (overlapTop < overlapBottom && this.vy >= 0) {
+this.y = platTop - this.height / 2;
+this.vy = 0;
+this.grounded = true;
+this.jumpsLeft = this.maxJumps;
+this.canMouseDash = true;
+this.canRightClickDash = true;
+this.canGrab = true;
+this.isHanging = false;
+} else if (overlapBottom <= overlapTop && this.vy < 0) {
+this.y = platBottom + this.height / 2;
+this.vy = 0;
+}
+} else {
+if (overlapLeft < overlapRight) {
+this.x = platLeft - this.width / 2;
+} else {
+this.x = platRight + this.width / 2;
+}
+this.vx = 0;
+}
+} else {
+this.grounded = false;
+}
+}
+
+executeRoll() {
+if (!this.grounded || this.hitstun > 0 || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.isRolling) return;
+
+if (this.isShielding) {
+this.isShielding = false;
+}
+
+let rollDir = this.facing;
+if (Math.abs(mouse.worldX - this.x) > 10) {
+rollDir = mouse.worldX > this.x ? 1 : -1;
+}
+
+this.facing = rollDir;
+this.isRolling = true;
+this.rollTimer = 60;
+
+const targetRollDistance = 368;
+this.rollVx = rollDir * (targetRollDistance / 60);
+
+audio.playDash();
+createParticles(this.x, this.y, '#38bdf8', 12);
+}
+
+jump() {
+if (this.hitstun > 0 || this.isShielding || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.grabbedBy || this.grabHolding || this.isRolling) return;
+
+if (this.isHanging) {
+this.isHanging = false;
+this.vy = -14.5;
+this.vx = this.hangSide * 7.5;
+this.jumpsLeft = this.maxJumps;
+this.canMouseDash = true;
+this.canRightClickDash = true;
+this.canGrab = true;
+audio.playJump();
+createParticles(this.x, this.y, '#38bdf8', 10);
+return;
+}
+
+if (this.grounded) {
+this.vy = -15.2;
+this.grounded = false;
+this.jumpsLeft--;
+audio.playJump();
+createParticles(this.x, this.y + this.height/2, '#38bdf8', 8);
+} else if (this.jumpsLeft > 0) {
+this.vy = -13.5;
+this.jumpsLeft--;
+audio.playJump();
+createParticles(this.x, this.y + this.height/2, '#06b6d4', 10);
+}
+}
+
+executeGrabDash(targetWorldX, targetWorldY) {
+if (!this.canGrab || this.hitstun > 0 || this.isShielding || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.grabHolding || this.isRolling || this.isHanging) return;
+
+this.canGrab = false;
+
+const dx = targetWorldX - this.x;
+const dy = targetWorldY - this.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist === 0) return;
+
+const grabDashSpeed = 23;
+this.vx = (dx / dist) * grabDashSpeed;
+this.vy = (dy / dist) * grabDashSpeed;
+
+this.isGrabDashing = true;
+this.grabDashTimer = 16;
+audio.playDash();
+}
+
+executeMouseDash(targetWorldX, targetWorldY) {
+if (!this.canMouseDash || this.hitstun > 0 || this.isShielding || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.isRolling || this.isHanging) return;
+
+const dx = targetWorldX - this.x;
+const dy = targetWorldY - this.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+if (dist === 0) return;
+
+const dashSpeed = 24;
+this.vx = (dx / dist) * dashSpeed;
+this.vy = (dy / dist) * dashSpeed;
+
+this.canMouseDash = false;
+this.isDashing = true;
+this.dashTimer = 16;
+this.dashHitConnected = false;
+
+audio.playDash();
+createParticles(this.x, this.y, '#22d3ee', 16);
+}
+
+executeRightClickDashAttack(targetWorldX, targetWorldY) {
+if (!this.canRightClickDash || this.attackTimer > 0 || this.hitstun > 0 || this.isShielding || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.isRolling || this.isHanging) return;
+
+this.canRightClickDash = false;
+
+const dx = targetWorldX - this.x;
+const dy = targetWorldY - this.y;
+const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+this.facing = dx >= 0 ? 1 : -1;
+this.vx = (dx / dist) * 20;
+this.vy = (dy / dist) * 20;
+
+this.attackTimer = 18;
+this.activeHitbox = {
+x: this.x + (dx / dist) * 40,
+y: this.y + (dy / dist) * 40,
+w: 75,
+h: 75,
+damage: 12,
+bkb: 12,
+kbg: 1.2,
+angle: Math.atan2(dy, dx)
+};
+
+audio.playHit(false);
+createParticles(this.x, this.y, '#38bdf8', 12);
+}
+
+attack(aimDirection) {
+if (this.attackTimer > 0 || this.hitstun > 0 || this.isShielding || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.isRolling || this.isHanging) return;
+
+this.attackTimer = 18;
+let hbX = this.x;
+let hbY = this.y;
+let hbW = 65;
+let hbH = 65;
+let baseDamage = 8;
+let baseKnockback = 10;
+let kbg = 1.25;
+let launchAngle = 0;
+
+switch (aimDirection) {
+case 'UP':
+hbY -= 55;
+hbW = 75;
+hbH = 55;
+baseDamage = 10;
+baseKnockback = 13;
+launchAngle = -Math.PI / 2;
+break;
+case 'DOWN':
+hbY += 55;
+hbW = 75;
+hbH = 55;
+baseDamage = 11;
+baseKnockback = 14;
+launchAngle = this.grounded ? -Math.PI / 3 : Math.PI / 2;
+break;
+case 'SIDE_LEFT':
+hbX -= 55;
+baseDamage = 12;
+baseKnockback = 13;
+launchAngle = Math.PI + Math.PI / 6;
+this.facing = -1;
+break;
+case 'SIDE_RIGHT':
+hbX += 55;
+baseDamage = 12;
+baseKnockback = 13;
+launchAngle = -Math.PI / 6;
+this.facing = 1;
+break;
+default:
+hbX += this.facing * 45;
+baseDamage = 7;
+baseKnockback = 8;
+launchAngle = this.facing === 1 ? -Math.PI / 4 : Math.PI + Math.PI / 4;
+break;
+}
+
+audio.playHit(false);
+
+this.activeHitbox = {
+x: hbX,
+y: hbY,
+w: hbW,
+h: hbH,
+damage: baseDamage,
+bkb: baseKnockback,
+kbg: kbg,
+angle: launchAngle
+};
+}
+
+takeKO() {
+if (gameMode === 'training' && this.isAI) {
+this.reset(false);
+return;
+}
+
+this.stocks--;
+audio.playKO();
+createExplosion(this.x, this.y);
+
+koBeams.push({
+startX: this.x,
+startY: this.y,
+targetX: STAGE.x + STAGE.width / 2,
+targetY: STAGE.y,
+alpha: 1.0,
+width: 32
+});
+
+if (this.stocks <= 0) {
+triggerDramaticZoom(this.isAI ? p1 : p2);
+endGame(this.isAI ? "PLAYER 1 WINS!" : "AI BOT WINS!");
+} else {
+this.reset(false);
+}
+}
+
+draw(ctx) {
+this.ghosts.forEach(g => {
+ctx.save();
+ctx.globalAlpha = g.alpha;
+ctx.fillStyle = g.color || '#67e8f9';
+ctx.fillRect(g.x - this.width / 2, g.y - this.height / 2, this.width, this.height);
+ctx.restore();
+});
+
+ctx.save();
+
+if (this.invincibleTimer > 0 && Math.floor(this.invincibleTimer / 4) % 2 === 0) {
+ctx.globalAlpha = 0.5;
+}
+
+const isGrey = this.hitstun > 0 || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.grabbedBy !== null;
+const renderColor = isGrey ? '#888888' : this.color;
+
+ctx.fillStyle = renderColor;
+ctx.shadowColor = renderColor;
+ctx.shadowBlur = isGrey ? 4 : 12;
+ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+
+ctx.fillStyle = isGrey ? '#555555' : '#ffffff';
+const eyeOffset = this.facing === 1 ? 8 : -16;
+ctx.fillRect(this.x + eyeOffset, this.y - this.height / 2 + 12, 8, 8);
+
+if (this.grabbedBy !== null) {
+ctx.strokeStyle = '#ef4444';
+ctx.lineWidth = 4;
+ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+ctx.shadowColor = '#ef4444';
+ctx.shadowBlur = 18;
+ctx.fillRect(this.x - this.width / 2 - 12, this.y - this.height / 2 - 12, this.width + 24, this.height + 24);
+ctx.strokeRect(this.x - this.width / 2 - 12, this.y - this.height / 2 - 12, this.width + 24, this.height + 24);
+}
+
+if (this.isHanging) {
+ctx.font = '14px sans-serif';
+ctx.fillStyle = '#38bdf8';
+ctx.fillText('🧗 HANGING', this.x - 30, this.y - this.height / 2 - 15);
+}
+
+if (this.dizzyTimer > 0) {
+ctx.font = '20px sans-serif';
+ctx.fillStyle = '#facc15';
+const starAngle = Date.now() * 0.01;
+const starX = this.x + Math.cos(starAngle) * 22;
+const starY = this.y - this.height / 2 - 22 + Math.sin(starAngle) * 6;
+ctx.fillText('💫', starX - 10, starY);
+}
+
+if (this.clashStunTimer > 0) {
+ctx.font = '20px sans-serif';
+ctx.fillStyle = '#f43f5e';
+ctx.fillText('💥 STUNNED', this.x - 40, this.y - this.height / 2 - 15);
+}
+
+if (this.isShielding) {
+const shieldRadius = (this.shieldHealth / this.maxShieldHealth) * 52 + 10;
+ctx.beginPath();
+ctx.arc(this.x, this.y, shieldRadius, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
+ctx.strokeStyle = '#22d3ee';
+ctx.lineWidth = 3;
+ctx.fill();
+ctx.stroke();
+}
+
+if (this.activeHitbox) {
+ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+ctx.strokeStyle = '#ef4444';
+ctx.lineWidth = 2;
+ctx.fillRect(
+this.activeHitbox.x - this.activeHitbox.w / 2,
+this.activeHitbox.y - this.activeHitbox.h / 2,
+this.activeHitbox.w,
+this.activeHitbox.h
+);
+ctx.strokeRect(
+this.activeHitbox.x - this.activeHitbox.w / 2,
+this.activeHitbox.y - this.activeHitbox.h / 2,
+this.activeHitbox.w,
+this.activeHitbox.h
+);
+}
+
+ctx.restore();
+}
+}
+
+class AIBot extends Fighter {
+constructor(x, y, color, name) {
+super(x, y, color, name, true);
+this.actionTimer = 0;
+}
+
+updateAI(target) {
+if (gameMode === 'training') {
+this.vx = 0;
+this.vy = Math.min(this.vy + WORLD.gravity, WORLD.terminalVelocity);
+this.y += this.vy;
+this.checkStageCollision();
+return;
+}
+
+if (this.hitstun > 0 || this.dizzyTimer > 0 || this.clashStunTimer > 0 || this.grabbedBy) return;
+
+this.actionTimer++;
+
+if (this.isHanging) {
+this.jump();
+this.vx = (this.x < STAGE.x + STAGE.width / 2) ? 8.5 : -8.5;
+return;
+}
+
+const isOverVoid = this.x < STAGE.x || this.x > STAGE.x + STAGE.width;
+
+if (isOverVoid) {
+const nearestLedgeX = this.x < STAGE.x + STAGE.width / 2 ? STAGE.x : STAGE.x + STAGE.width;
+const nearestLedgeY = STAGE.y;
+const dir = nearestLedgeX > this.x ? 1 : -1;
+
+this.facing = dir;
+this.vx += dir * 1.2;
+
+if (this.canMouseDash && this.actionTimer % 6 === 0) {
+this.executeMouseDash(nearestLedgeX, nearestLedgeY);
+} else if (this.canRightClickDash && this.actionTimer % 6 === 0) {
+this.executeRightClickDashAttack(nearestLedgeX, nearestLedgeY);
+} else if (this.canGrab && this.actionTimer % 6 === 0) {
+this.executeGrabDash(nearestLedgeX, nearestLedgeY);
+} else if (this.attackTimer === 0 && this.actionTimer % 8 === 0) {
+this.attack(dir === 1 ? 'SIDE_RIGHT' : 'SIDE_LEFT');
+}
+
+if (this.jumpsLeft > 0 && this.vy > -2 && this.actionTimer % 6 === 0) {
+this.jump();
+}
+
+return;
+}
+
+const distToTargetX = target.x - this.x;
+const distToTargetY = target.y - this.y;
+const dist = Math.sqrt(distToTargetX * distToTargetX + distToTargetY * distToTargetY);
+
+if (gameMode === 'easy') {
+const reactionRate = 35;
+const movementSpeed = 0.55;
+
+if (this.actionTimer % reactionRate === 0) {
+this.facing = distToTargetX > 0 ? 1 : -1;
+
+if (Math.abs(distToTargetX) > 100) {
+this.vx += this.facing * movementSpeed;
+}
+
+if (dist < 130 && Math.random() < 0.65) {
+this.isShielding = true;
+setTimeout(() => { this.isShielding = false; }, 900);
+} else if (dist < 90 && Math.random() < 0.3) {
+let aiAim = distToTargetY < -30 ? 'UP' : 'NEUTRAL';
+this.attack(aiAim);
+}
+}
+
+const nearLeftEdge = this.x < STAGE.x + 100;
+const nearRightEdge = this.x > STAGE.x + STAGE.width - 100;
+if (nearLeftEdge || nearRightEdge || this.y > STAGE.y + 20) {
+const targetX = STAGE.x + STAGE.width / 2;
+this.vx += (targetX - this.x > 0 ? 0.6 : -0.6);
+if (this.vy > 1 && this.jumpsLeft > 0 && this.actionTimer % 25 === 0) {
+this.jump();
+}
+}
+return;
+}
+
+const nearLeftEdge = this.x < STAGE.x + 180;
+const nearRightEdge = this.x > STAGE.x + STAGE.width - 180;
+const isOffStage = nearLeftEdge || nearRightEdge || this.y > STAGE.y + 20;
+
+const speedMultiplier = isOffStage ? 1.4 : 1.365;
+
+const targetIsOffStage = target.x < STAGE.x - 20 || target.x > STAGE.x + STAGE.width + 20 || target.y > STAGE.y + 10 || target.isHanging;
+if (targetIsOffStage && this.grounded && !isOffStage) {
+const guardLedgeX = target.x < STAGE.x ? STAGE.x + 60 : STAGE.x + STAGE.width - 60;
+const guardDir = guardLedgeX > this.x ? 1 : -1;
+this.facing = guardDir;
+this.vx += guardDir * 1.5;
+
+if (Math.abs(this.x - guardLedgeX) < 100 && this.actionTimer % 15 === 0) {
+this.attack('DOWN');
+}
+return;
+}
+
+if (this.actionTimer % 7 === 0) {
+this.facing = distToTargetX > 0 ? 1 : -1;
+
+if (Math.abs(distToTargetX) > 70) {
+this.vx += this.facing * 1.05 * speedMultiplier;
+}
+
+const targetIsAirborne = !target.grounded && target.y < STAGE.y - 10;
+if (targetIsAirborne) {
+if (this.grounded && Math.random() < 0.7) {
+this.jump();
+}
+if (dist < 150 && this.canGrab && Math.random() < 0.6) {
+this.executeGrabDash(target.x, target.y);
+} else if (dist < 180 && this.canMouseDash && Math.random() < 0.6) {
+this.executeMouseDash(target.x, target.y);
+}
+}
+
+if (distToTargetY < -90 && this.grounded) {
+this.jump();
+}
+
+if (dist < 110 && !this.grabHolding && this.canGrab && Math.random() < 0.45) {
+this.executeGrabDash(target.x, target.y);
+} else if (dist < 120) {
+let aiAim = 'NEUTRAL';
+if (distToTargetY < -40) aiAim = 'UP';
+else if (distToTargetY > 40) aiAim = 'DOWN';
+else aiAim = this.facing === 1 ? 'SIDE_RIGHT' : 'SIDE_LEFT';
+
+this.attack(aiAim);
+}
+
+if (dist < 90 && target.activeHitbox && Math.random() < 0.5) {
+this.isShielding = true;
+setTimeout(() => { this.isShielding = false; }, 400);
+}
+}
+}
+}
+
+// --- SECRET AUTOPILOT: a hand-tuned controller for P1 that reacts faster, ---
+// --- dodges incoming hits, and punishes harder than the Hard bot does.    ---
+function runP1Bot(bot, target) {
+if (bot.hitstun > 0 || bot.dizzyTimer > 0 || bot.clashStunTimer > 0 || bot.grabbedBy) {
+bot.isShielding = false;
+return;
+}
+
+p1BotTimer++;
+
+if (bot.isHanging) {
+bot.jump();
+bot.vx = (bot.x < STAGE.x + STAGE.width / 2) ? 9 : -9;
+return;
+}
+
+const isOverVoid = bot.x < STAGE.x || bot.x > STAGE.x + STAGE.width;
+
+if (isOverVoid) {
+const nearestLedgeX = bot.x < STAGE.x + STAGE.width / 2 ? STAGE.x : STAGE.x + STAGE.width;
+const dir = nearestLedgeX > bot.x ? 1 : -1;
+bot.facing = dir;
+bot.vx += dir * 1.4;
+
+if (bot.canMouseDash && p1BotTimer % 4 === 0) {
+bot.executeMouseDash(nearestLedgeX, STAGE.y);
+} else if (bot.canGrab && p1BotTimer % 4 === 0) {
+bot.executeGrabDash(nearestLedgeX, STAGE.y);
+}
+
+if (bot.jumpsLeft > 0 && bot.vy > -2 && p1BotTimer % 4 === 0) {
+bot.jump();
+}
+return;
+}
+
+const dx = target.x - bot.x;
+const dy = target.y - bot.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+
+// Defensive: dodge or shield incoming attacks it can see coming
+if (bot.grounded && !bot.isRolling && target.activeHitbox && dist < 150) {
+const willHit = Math.abs(target.activeHitbox.x - bot.x) < 95 && Math.abs(target.activeHitbox.y - bot.y) < 95;
+if (willHit) {
+if (Math.random() < 0.6) {
+bot.executeRoll();
+} else {
+bot.isShielding = true;
+}
+return;
+}
+}
+if (bot.isShielding && (!target.activeHitbox || dist > 130)) {
+bot.isShielding = false;
+}
+
+// Edge-guard aggressively whenever the target strays off stage
+const targetIsOffStage = target.x < STAGE.x - 20 || target.x > STAGE.x + STAGE.width + 20 || target.y > STAGE.y + 10 || target.isHanging;
+if (targetIsOffStage && bot.grounded) {
+const guardLedgeX = target.x < STAGE.x + STAGE.width / 2 ? STAGE.x + 55 : STAGE.x + STAGE.width - 55;
+const guardDir = guardLedgeX > bot.x ? 1 : -1;
+bot.facing = guardDir;
+bot.vx += guardDir * 1.6;
+
+if (Math.abs(bot.x - guardLedgeX) < 90 && p1BotTimer % 6 === 0) {
+bot.attack('DOWN');
+}
+return;
+}
+
+if (p1BotTimer % 4 === 0) {
+bot.facing = dx > 0 ? 1 : -1;
+
+if (Math.abs(dx) > 60) {
+bot.vx += bot.facing * 1.5;
+}
+
+const targetIsAirborne = !target.grounded && target.y < STAGE.y - 10;
+if (targetIsAirborne) {
+if (bot.grounded && Math.random() < 0.8) bot.jump();
+if (dist < 160 && bot.canGrab && Math.random() < 0.7) {
+bot.executeGrabDash(target.x, target.y);
+} else if (dist < 190 && bot.canMouseDash && Math.random() < 0.7) {
+bot.executeMouseDash(target.x, target.y);
+}
+}
+
+if (dy < -90 && bot.grounded) bot.jump();
+
+if (dist < 115 && !bot.grabHolding && bot.canGrab && !target.isShielding && Math.random() < 0.55) {
+bot.executeGrabDash(target.x, target.y);
+} else if (dist < 125) {
+let aim = 'NEUTRAL';
+if (dy < -40) aim = 'UP';
+else if (dy > 40) aim = 'DOWN';
+else aim = bot.facing === 1 ? 'SIDE_RIGHT' : 'SIDE_LEFT';
+
+if (!target.isShielding) {
+bot.attack(aim);
+} else if (bot.canGrab) {
+bot.executeGrabDash(target.x, target.y);
+}
+}
+}
+}
+
+const particles = [];
+function createParticles(x, y, color, count = 10) {
+for (let i = 0; i < count; i++) {
+particles.push({
+x: x,
+y: y,
+vx: (Math.random() - 0.5) * 14,
+vy: (Math.random() - 0.5) * 14,
+radius: Math.random() * 5 + 2,
+color: color,
+alpha: 1,
+life: 25
+});
+}
+}
+
+function createExplosion(x, y) {
+createParticles(x, y, '#ef4444', 40);
+createParticles(x, y, '#f59e0b', 40);
+createParticles(x, y, '#ffffff', 25);
+screenShake = 22;
+}
+
+const p1 = new Fighter(STAGE.x + 300, STAGE.y - 100, '#06b6d4', 'Player 1');
+const p2 = new AIBot(STAGE.x + 1200, STAGE.y - 100, '#f43f5e', 'AI Bot');
+
+function checkCombatCollisions(attacker, defender) {
+const isMutualGrab = (
+(p1.isGrabDashing && p2.isGrabDashing) ||
+(p1.isGrabDashing && p2.grabHolding !== null) ||
+(p2.isGrabDashing && p1.grabHolding !== null)
+);
+
+if (isMutualGrab) {
+const colliding = (
+p1.x - p1.width/2 < p2.x + p2.width/2 &&
+p1.x + p1.width/2 > p2.x - p2.width/2 &&
+p1.y - p1.height/2 < p2.y + p2.height/2 &&
+p1.y + p1.height/2 > p2.y - p2.height/2
+);
+
+if (colliding || Math.hypot(p1.x - p2.x, p1.y - p2.y) < 70) {
+p1.vx = 0;
+p1.vy = 0;
+p2.vx = 0;
+p2.vy = 0;
+
+p1.clashStunTimer = 120;
+p2.clashStunTimer = 120;
+
+p1.isGrabDashing = false;
+p2.isGrabDashing = false;
+p1.grabHolding = null;
+p2.grabHolding = null;
+p1.grabbedBy = null;
+p2.grabbedBy = null;
+p1.isRolling = false;
+p2.isRolling = false;
+
+const clashX = (p1.x + p2.x) / 2;
+const clashY = (p1.y + p2.y) / 2;
+
+shockwaves.push({
+x: clashX,
+y: clashY,
+radius: 10,
+maxRadius: STAGE.width * 1.15,
+expansionSpeed: 6.5,
+alpha: 1.0,
+color: '#38bdf8'
+});
+
+audio.playHit(true);
+screenShake = 18;
+createParticles(clashX, clashY, '#38bdf8', 35);
+createParticles(clashX, clashY, '#ffffff', 20);
+return;
+}
+}
+
+if (attacker.isGrabDashing && !attacker.grabHolding && defender.invincibleTimer <= 0) {
+const dx = defender.x - attacker.x;
+const dy = defender.y - attacker.y;
+const dist = Math.sqrt(dx * dx + dy * dy);
+
+const enlargedGrabHitboxRadius = 72;
+
+if (dist < enlargedGrabHitboxRadius) {
+if (defender.isShielding) {
+audio.playShield();
+attacker.isGrabDashing = false;
+return;
+}
+
+attacker.isGrabDashing = false;
+attacker.grabHolding = defender;
+attacker.grabTimer = 90;
+defender.grabbedBy = attacker;
+defender.hitstun = 90;
+
+audio.playGrab();
+createParticles(defender.x, defender.y, '#ef4444', 20);
+return;
+}
+}
+
+if (attacker.isDashing && !attacker.dashHitConnected && defender.invincibleTimer <= 0) {
+const dashLeft = attacker.x - attacker.width;
+const dashRight = attacker.x + attacker.width;
+const dashTop = attacker.y - attacker.height;
+const dashBottom = attacker.y + attacker.height;
+
+const defLeft = defender.x - defender.width / 2;
+const defRight = defender.x + defender.width / 2;
+const defTop = defender.y - defender.height / 2;
+const defBottom = defender.y + defender.height / 2;
+
+if (dashLeft < defRight && dashRight > defLeft && dashTop < defBottom && dashBottom > defTop) {
+if (defender.isShielding) {
+audio.playShield();
+createParticles(defender.x, defender.y, '#22d3ee', 10);
+attacker.dashHitConnected = true;
+return;
+}
+
+defender.damage += 12;
+const upwardKnockback = -18 - (defender.damage * 0.15);
+defender.vy = upwardKnockback;
+defender.vx = attacker.vx * 0.6;
+defender.hitstun = 60;
+defender.grounded = false;
+
+attacker.dashHitConnected = true;
+screenShake = 14;
+audio.playHit(true);
+createParticles(defender.x, defender.y, '#22d3ee', 20);
+return;
+}
+}
+
+if (!attacker.activeHitbox || defender.invincibleTimer > 0) return;
+
+const hb = attacker.activeHitbox;
+const defLeft = defender.x - defender.width / 2;
+const defRight = defender.x + defender.width / 2;
+const defTop = defender.y - defender.height / 2;
+const defBottom = defender.y + defender.height / 2;
+
+const hbLeft = hb.x - hb.w / 2;
+const hbRight = hb.x + hb.w / 2;
+const hbTop = hb.y - hb.h / 2;
+const hbBottom = hb.y + hb.h / 2;
+
+if (hbLeft < defRight && hbRight > defLeft && hbTop < defBottom && hbBottom > defTop) {
+if (defender.isShielding) {
+audio.playShield();
+createParticles(defender.x, defender.y, '#22d3ee', 8);
+attacker.activeHitbox = null;
+return;
+}
+
+defender.damage += hb.damage;
+
+if (defender.isAI && gameMode === 'hard') {
+defender.incomingHitCount++;
+if (defender.grounded && defender.incomingHitCount >= 3 && !defender.isRolling) {
+defender.incomingHitCount = 0;
+defender.executeRoll();
+}
+} else {
+attacker.incomingHitCount = 0;
+}
+
+const effectiveDamage = defender.damage / 2;
+const percentFactor = (effectiveDamage / 10) + (effectiveDamage * hb.damage / 20);
+const kbForce = (percentFactor * hb.kbg) + hb.bkb;
+
+defender.vx = Math.cos(hb.angle) * kbForce * 0.85;
+defender.vy = Math.sin(hb.angle) * kbForce * 0.85;
+defender.hitstun = 60;
+defender.grounded = false;
+
+screenShake = Math.min(25, Math.floor(kbForce));
+audio.playHit(kbForce > 18);
+createParticles(defender.x, defender.y, '#f59e0b', Math.floor(kbForce));
+
+attacker.activeHitbox = null;
+}
+}
+
+function renderHUD() {
+document.getElementById('p1Damage').textContent = Math.floor(p1.damage);
+const p1DamageElem = document.getElementById('p1Damage');
+if (p1.damage > 120) p1DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-rose-500 pulse-glow-red leading-none";
+else if (p1.damage > 60) p1DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-amber-400 leading-none";
+else p1DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-white leading-none";
+
+const p1StocksContainer = document.getElementById('p1Stocks');
+p1StocksContainer.innerHTML = '';
+for (let i = 0; i < p1.stocks; i++) {
+const pip = document.createElement('div');
+pip.className = 'w-3.5 h-3.5 rounded-full bg-cyan-400 border border-cyan-200 shadow-md shadow-cyan-500/50';
+p1StocksContainer.appendChild(pip);
+}
+
+const dashBadge = document.getElementById('p1DashBadge');
+if (p1.canMouseDash) {
+dashBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/50';
+dashBadge.textContent = 'DASH READY';
+} else {
+dashBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-700';
+dashBadge.textContent = 'DASH USED';
+}
+
+const jumpContainer = document.getElementById('p1JumpDots');
+jumpContainer.innerHTML = '';
+for (let i = 0; i < p1.maxJumps; i++) {
+const dot = document.createElement('div');
+dot.className = `w-2.5 h-2.5 rounded-full ${i < p1.jumpsLeft ? 'bg-cyan-400' : 'bg-slate-700'}`;
+jumpContainer.appendChild(dot);
+}
+
+const botBadge = document.getElementById('p1BotBadge');
+if (p1BotActive) {
+botBadge.classList.remove('hidden');
+} else {
+botBadge.classList.add('hidden');
+}
+
+document.getElementById('p2Damage').textContent = Math.floor(p2.damage);
+const p2DamageElem = document.getElementById('p2Damage');
+if (p2.damage > 120) p2DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-rose-500 pulse-glow-red leading-none";
+else if (p2.damage > 60) p2DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-amber-400 leading-none";
+else p2DamageElem.className = "smash-font text-5xl font-bold tracking-tight text-white leading-none";
+
+const p2StocksContainer = document.getElementById('p2Stocks');
+p2StocksContainer.innerHTML = '';
+const botStocksDisplay = gameMode === 'training' ? 3 : p2.stocks;
+for (let i = 0; i < botStocksDisplay; i++) {
+const pip = document.createElement('div');
+pip.className = 'w-3.5 h-3.5 rounded-full bg-rose-500 border border-rose-300 shadow-md shadow-rose-500/50';
+p2StocksContainer.appendChild(pip);
+}
+}
+
+function triggerDramaticZoom(winnerCharacter) {
+dramaticZoom.active = true;
+dramaticZoom.targetX = winnerCharacter.x;
+dramaticZoom.targetY = winnerCharacter.y;
+dramaticZoom.currentZoom = 1;
+dramaticZoom.progress = 0;
+}
+
+function gameLoop() {
+if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+}
+
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+ctx.save();
+
+let scaleX = canvas.width / WORLD.width;
+let scaleY = canvas.height / WORLD.height;
+let currentScale = Math.max(scaleX, scaleY);
+
+if (dramaticZoom.active) {
+dramaticZoom.progress += 0.02;
+dramaticZoom.currentZoom += (dramaticZoom.targetZoom - dramaticZoom.currentZoom) * 0.08;
+currentScale *= dramaticZoom.currentZoom;
+
+ctx.translate(canvas.width / 2, canvas.height / 2);
+ctx.scale(currentScale, currentScale);
+ctx.translate(-dramaticZoom.targetX, -dramaticZoom.targetY);
+} else {
+if (screenShake > 0) {
+const shakeX = (Math.random() - 0.5) * screenShake;
+const shakeY = (Math.random() - 0.5) * screenShake;
+ctx.translate(shakeX, shakeY);
+screenShake *= 0.88;
+if (screenShake < 0.5) screenShake = 0;
+}
+ctx.scale(scaleX, scaleY);
+}
+
+ctx.fillStyle = '#060913';
+ctx.fillRect(0, 0, WORLD.width, WORLD.height);
+
+ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+ctx.setLineDash([16, 16]);
+ctx.lineWidth = 4;
+ctx.strokeRect(BLAST_ZONES.left, BLAST_ZONES.top, BLAST_ZONES.right - BLAST_ZONES.left, BLAST_ZONES.bottom - BLAST_ZONES.top);
+ctx.setLineDash([]);
+
+ctx.fillStyle = STAGE.color;
+ctx.beginPath();
+ctx.moveTo(STAGE.x, STAGE.y);
+ctx.lineTo(STAGE.x + STAGE.width, STAGE.y);
+ctx.lineTo(STAGE.x + STAGE.width / 2, STAGE.y + STAGE.height);
+ctx.closePath();
+ctx.fill();
+
+ctx.fillStyle = STAGE.topColor;
+ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, 8);
+ctx.fillStyle = '#06b6d4';
+ctx.fillRect(STAGE.x - 4, STAGE.y, 8, 14);
+ctx.fillRect(STAGE.x + STAGE.width - 4, STAGE.y, 8, 14);
+
+if (gameState === 'playing') {
+if (p1BotActive) {
+runP1Bot(p1, p2);
+} else if (p1.hitstun === 0 && p1.dizzyTimer === 0 && p1.clashStunTimer === 0 && !p1.grabHolding && !p1.isRolling) {
+if (keys['a'] || keys['A']) {
+if (p1.isHanging) p1.isHanging = false;
+p1.vx = -8.5;
+p1.facing = -1;
+}
+if (keys['d'] || keys['D']) {
+if (p1.isHanging) p1.isHanging = false;
+p1.vx = 8.5;
+p1.facing = 1;
+}
+
+p1.isShielding = !!(keys['e'] || keys['E']);
+} else {
+p1.isShielding = false;
+}
+
+p1.update();
+p2.updateAI(p1);
+p2.update();
+
+checkCombatCollisions(p1, p2);
+checkCombatCollisions(p2, p1);
+}
+
+for (let i = shockwaves.length - 1; i >= 0; i--) {
+const sw = shockwaves[i];
+sw.radius += sw.expansionSpeed;
+
+const progress = sw.radius / sw.maxRadius;
+if (progress > 0.75) {
+sw.alpha -= 0.025;
+}
+
+if (sw.alpha <= 0 || sw.radius >= sw.maxRadius) {
+shockwaves.splice(i, 1);
+continue;
+}
+
+ctx.save();
+ctx.globalAlpha = Math.max(0, sw.alpha);
+ctx.beginPath();
+ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+ctx.strokeStyle = sw.color;
+ctx.lineWidth = 8;
+ctx.shadowColor = sw.color;
+ctx.shadowBlur = 28;
+ctx.stroke();
+ctx.restore();
+}
+
+for (let i = particles.length - 1; i >= 0; i--) {
+const p = particles[i];
+p.x += p.vx;
+p.y += p.vy;
+p.alpha -= 0.04;
+if (p.alpha <= 0) {
+particles.splice(i, 1);
+continue;
+}
+ctx.save();
+ctx.globalAlpha = p.alpha;
+ctx.fillStyle = p.color;
+ctx.beginPath();
+ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+ctx.fill();
+ctx.restore();
+}
+
+for (let i = koBeams.length - 1; i >= 0; i--) {
+const beam = koBeams[i];
+beam.alpha -= 0.02;
+if (beam.alpha <= 0) {
+koBeams.splice(i, 1);
+continue;
+}
+ctx.save();
+ctx.globalAlpha = beam.alpha;
+ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+ctx.lineWidth = beam.width;
+ctx.shadowColor = '#38bdf8';
+ctx.shadowBlur = 32;
+ctx.beginPath();
+ctx.moveTo(beam.startX, beam.startY);
+ctx.lineTo(beam.targetX, beam.targetY);
+ctx.stroke();
+ctx.restore();
+}
+
+p1.draw(ctx);
+p2.draw(ctx);
+
+if (gameState === 'playing') {
+ctx.save();
+ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+ctx.setLineDash([6, 6]);
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(p1.x, p1.y);
+ctx.lineTo(mouse.worldX, mouse.worldY);
+ctx.stroke();
+ctx.restore();
+}
+
+ctx.restore();
+
+renderHUD();
+requestAnimationFrame(gameLoop);
+}
+
+function startMatchSequence(mode) {
+gameMode = mode;
+document.getElementById('startScreen').classList.add('hidden');
+document.getElementById('gameOverModal').classList.add('hidden');
+dramaticZoom.active = false;
+p1BotActive = false;
+p1BotTimer = 0;
+
+p1.reset(true);
+p2.reset(true);
+
+const modeLabel = document.getElementById('modeDisplayLabel');
+const aiDiffLabel = document.getElementById('aiDiffLabel');
+const aiDescText = document.getElementById('aiDescText');
+
+if (gameMode === 'easy') {
+modeLabel.textContent = "MODE: EASY";
+aiDiffLabel.textContent = "Easy Bot";
+aiDescText.textContent = "Slower movement, passive attacks & defensive shield";
+document.getElementById('trainingControlPanel').classList.add('hidden');
+document.getElementById('openTrainingPanelBtn').classList.add('hidden');
+} else if (gameMode === 'hard') {
+modeLabel.textContent = "MODE: HARD";
+aiDiffLabel.textContent = "Hard Bot";
+aiDescText.textContent = "Aggressive Ledge Guard & Counter-Rolls Active";
+document.getElementById('trainingControlPanel').classList.add('hidden');
+document.getElementById('openTrainingPanelBtn').classList.add('hidden');
+} else if (gameMode === 'training') {
+modeLabel.textContent = "MODE: TRAINING";
+aiDiffLabel.textContent = "Training Dummy";
+aiDescText.textContent = "Stationary practice dummy with infinite stocks";
+document.getElementById('trainingControlPanel').classList.remove('hidden');
+document.getElementById('openTrainingPanelBtn').classList.add('hidden');
+}
+
+document.getElementById('gameHud').classList.remove('hidden');
+document.getElementById('aimMatrixHud').classList.remove('hidden');
+document.getElementById('inGameMenuContainer').classList.remove('hidden');
+
+gameState = 'countdown';
+const countdownScreen = document.getElementById('countdownScreen');
+const countdownText = document.getElementById('countdownText');
+countdownScreen.classList.remove('hidden');
+
+let count = 3;
+countdownText.textContent = count;
+
+const countdownInterval = setInterval(() => {
+count--;
+if (count > 0) {
+countdownText.textContent = count;
+} else if (count === 0) {
+countdownText.textContent = 'GO!';
+} else {
+clearInterval(countdownInterval);
+countdownScreen.classList.add('hidden');
+gameState = 'playing';
+}
+}, 1000);
+}
+
+window.addEventListener('keydown', (e) => {
+audio.init();
+keys[e.key] = true;
+
+// SECRET: toggle the autopilot takeover with 'B'
+if (e.key === 'b' || e.key === 'B') {
+p1BotActive = !p1BotActive;
+}
+
+if (gameState !== 'playing') return;
+
+if (e.key === ' ' || e.code === 'Space') {
+e.preventDefault();
+p1.jump();
+}
+
+if (e.key === 'q' || e.key === 'Q') {
+p1.executeGrabDash(mouse.worldX, mouse.worldY);
+}
+
+if (e.key === 'f' || e.key === 'F' || e.key === 'j' || e.key === 'J') {
+p1.attack(mouse.direction);
+}
+
+if (e.key === 'h' || e.key === 'H') {
+toggleControlsModal();
+}
+});
+
+window.addEventListener('keyup', (e) => {
+keys[e.key] = false;
+});
+
+window.addEventListener('mousemove', (e) => {
+mouse.x = e.clientX;
+mouse.y = e.clientY;
+
+const scaleX = canvas.width / WORLD.width;
+const scaleY = canvas.height / WORLD.height;
+mouse.worldX = e.clientX / scaleX;
+mouse.worldY = e.clientY / scaleY;
+
+updateAimMatrix();
+});
+
+window.addEventListener('wheel', (e) => {
+audio.init();
+if (gameState !== 'playing') return;
+e.preventDefault();
+p1.executeRoll();
+}, { passive: false });
+
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+window.addEventListener('mousedown', (e) => {
+audio.init();
+if (gameState !== 'playing') return;
+
+if (e.button === 2) {
+p1.executeRightClickDashAttack(mouse.worldX, mouse.worldY);
+} else if (e.button === 0) {
+p1.executeMouseDash(mouse.worldX, mouse.worldY);
+}
+});
+
+const menuToggleBtn = document.getElementById('menuToggleBtn');
+const menuDropdown = document.getElementById('menuDropdown');
+
+menuToggleBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+menuDropdown.classList.toggle('hidden');
+});
+
+window.addEventListener('click', () => {
+if (!menuDropdown.classList.contains('hidden')) {
+menuDropdown.classList.add('hidden');
+}
+});
+
+document.getElementById('menuResumeBtn').addEventListener('click', () => {
+menuDropdown.classList.add('hidden');
+});
+
+document.getElementById('menuRestartBtn').addEventListener('click', () => {
+menuDropdown.classList.add('hidden');
+startMatchSequence(gameMode);
+});
+
+document.getElementById('downloadSourceStartBtn').addEventListener('click', downloadCurrentHTML);
+document.getElementById('downloadSourceMenuBtn').addEventListener('click', () => {
+menuDropdown.classList.add('hidden');
+downloadCurrentHTML();
+});
+
+document.getElementById('menuQuitBtn').addEventListener('click', () => {
+menuDropdown.classList.add('hidden');
+document.getElementById('gameHud').classList.add('hidden');
+document.getElementById('aimMatrixHud').classList.add('hidden');
+document.getElementById('inGameMenuContainer').classList.add('hidden');
+document.getElementById('trainingControlPanel').classList.add('hidden');
+document.getElementById('openTrainingPanelBtn').classList.add('hidden');
+dramaticZoom.active = false;
+gameState = 'start';
+document.getElementById('startScreen').classList.remove('hidden');
+});
+
+const controlsModal = document.getElementById('controlsModal');
+function toggleControlsModal() {
+controlsModal.classList.toggle('hidden');
+}
+
+document.getElementById('toggleControlsBtn').addEventListener('click', toggleControlsModal);
+document.getElementById('closeControlsBtn').addEventListener('click', toggleControlsModal);
+document.getElementById('startPlayBtn').addEventListener('click', toggleControlsModal);
+
+const trainingPanel = document.getElementById('trainingControlPanel');
+const openTrainingBtn = document.getElementById('openTrainingPanelBtn');
+document.getElementById('closeTrainingPanelBtn').addEventListener('click', () => {
+trainingPanel.classList.add('hidden');
+openTrainingBtn.classList.remove('hidden');
+});
+openTrainingBtn.addEventListener('click', () => {
+trainingPanel.classList.remove('hidden');
+openTrainingBtn.classList.add('hidden');
+});
+
+document.getElementById('easyModeBtn').addEventListener('click', () => {
+audio.init();
+startMatchSequence('easy');
+});
+document.getElementById('hardModeBtn').addEventListener('click', () => {
+audio.init();
+startMatchSequence('hard');
+});
+document.getElementById('trainingModeBtn').addEventListener('click', () => {
+audio.init();
+startMatchSequence('training');
+});
+
+const gameOverModal = document.getElementById('gameOverModal');
+function endGame(winnerText) {
+gameState = 'gameover';
+document.getElementById('winnerText').textContent = winnerText;
+setTimeout(() => {
+gameOverModal.classList.remove('hidden');
+}, 800);
+}
+
+document.getElementById('rematchBtn').addEventListener('click', () => {
+startMatchSequence(gameMode);
+});
+
+document.getElementById('exitBtn').addEventListener('click', () => {
+gameOverModal.classList.add('hidden');
+document.getElementById('gameHud').classList.add('hidden');
+document.getElementById('aimMatrixHud').classList.add('hidden');
+document.getElementById('inGameMenuContainer').classList.add('hidden');
+document.getElementById('trainingControlPanel').classList.add('hidden');
+document.getElementById('openTrainingPanelBtn').classList.add('hidden');
+dramaticZoom.active = false;
+gameState = 'start';
+document.getElementById('startScreen').classList.remove('hidden');
+});
+
+window.onload = () => {
+updateAimMatrix();
+gameLoop();
+};
+</script>
+</body>
+</html>
